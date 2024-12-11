@@ -1,0 +1,84 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: PowerShell@2
+  env:
+    ADO_PAT: $(System.AccessToken)
+  inputs:
+    targetType: 'inline'
+    script: |
+      function CreateServiceConnection( $DevOpsOrg, $ProjectID, $ProjectName, $ClientId, $TenantId, $subscriptionId, $subscriptionName, $spnToken, $ServiceConnectionName) {
+      $url = "https://dev.azure.com/$DevOpsOrg/_apis/serviceendpoint/endpoints?api-version=7.1"
+      
+      
+      # Auth with a bearer token
+      $headers = @{Authorization = "Bearer $(System.AccessToken)"}
+
+      $body = @{
+          data = @{
+              subscriptionId = "$subscriptionId"
+              subscriptionName = "$subscriptionName"
+              environment = "AzureCloud"
+              scopeLevel = "Subscription"
+              creationMode = "Manual"
+          }
+          name = "$ServiceConnectionName"
+          type = "AzureRM"
+          url = "https://management.azure.com/"
+          authorization = @{
+              parameters = @{
+                  tenantid = "$TenantId"
+                  serviceprincipalid = "$ClientId"
+                  authenticationType = "spnKey"
+                  serviceprincipalkey = "$spnToken"
+              }
+              scheme = "ServicePrincipal"
+          }
+          isShared = $false
+          isReady = $true
+          serviceEndpointProjectReferences = @(
+              @{
+                  projectReference = @{
+                      id = "$ProjectID"
+                      name = "$ProjectName"
+                  }
+                  name = "$ServiceConnectionName"
+              }
+          )
+      }
+
+      # Convierte el cuerpo a JSON
+      $jsonBody = $body | ConvertTo-Json -Depth 10 -Compress
+
+      # Create the OIDC token  
+      $response = Invoke-RestMethod -Uri $url -Method Post -Body $jsonBody -Headers $headers -ContentType "application/json"
+      
+      # return the response
+      return $response
+      }
+
+      #Organization and Project Data
+      $org = "{OrganizationName}"
+      $ProjectID = "{ProjectID}"
+      $ProjectName = "{ProjectName}"
+
+      #Service Principal info
+      $ClientId = "{ClientId}"
+      $TenantId = "{TenantId}"
+      $spnToken = "$(ServicePrincipalToken)" #Create a secret variable in the pipeline to save the token
+
+      #Service Connection Name
+      $ServiceConnectionName = "JeaustinNewConnection"
+
+      #Save the result
+      $result = CreateServiceConnection -DevOpsOrg $org -ProjectID $ProjectID -ProjectName $ProjectName  -ClientId $ClientId -TenantId $TenantId -subscriptionId $subscriptionId -subscriptionName $subscriptionName -spnToken $spnToken -ServiceConnectionName  $ServiceConnectionName
+
+      $result.id

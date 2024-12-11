@@ -1,0 +1,65 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: PowerShell@2
+  env:
+    ADO_PAT: $(System.AccessToken)
+  inputs:
+    targetType: 'inline'
+    script: |
+      function CreateVariableGroup($DevOpsOrg, $VariableGroup) {
+          $url = "https://dev.azure.com/$DevOpsOrg/_apis/distributedtask/variablegroups?api-version=6.0-preview.2"
+          
+          # Auth with a bearer token
+          $headers = @{ Authorization = "Bearer $(System.AccessToken)" }
+
+          # API Body
+          $body = @{
+              description = "{Add your description here}"
+              name = "$VariableGroup"
+              type = "Vsts"
+              variables = @{
+                  ExampleVariable = @{
+                      isSecret = $true
+                      value = "Example1"
+                  }
+                  ExampleVariable = @{
+                      isSecret = $false
+                      value = "Example2"
+                  }
+              }
+              variableGroupProjectReferences = @(
+                  @{
+                      projectReference = @{
+                          id = "{ProjectID}"
+                          name = "{ProjectName}"
+                      }
+                      name = "$VariableGroup"
+                  }
+              )
+          }
+
+          # Convert to JSON
+          $jsonBody = $body | ConvertTo-Json -Depth 10 -Compress
+
+          # Execute the POST
+          $response = Invoke-RestMethod -Uri $url -Method Post -Body $jsonBody -Headers $headers -ContentType "application/json"
+
+          # Get the response
+          return $response
+      }
+
+      # Organization Name
+      $org = "{YourOrganizationName}"
+
+      # Variable Group Name
+      $VariableGroup = "{YourVariableGroupName}"
+
+      # Call the function 
+      $result = CreateVariableGroup -DevOpsOrg $org -VariableGroup $VariableGroup
+
+      # Get the service connection ID 
+      $result.id
