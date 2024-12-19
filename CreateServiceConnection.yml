@@ -75,6 +75,11 @@ steps:
       $TenantId = "{TenantId}"
       $spnToken = "$(ServicePrincipalToken)" #Create a secret variable in the pipeline to save the token
 
+      #Subscription Data Name
+
+      $subscriptionId = "{subscriptionId}"
+      $subscriptionName = "{subscriptionName"
+
       #Service Connection Name
       $ServiceConnectionName = "JeaustinNewConnection"
 
