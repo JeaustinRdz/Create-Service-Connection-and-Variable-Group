@@ -26,7 +26,7 @@ steps:
                       isSecret = $true
                       value = "Example1"
                   }
-                  ExampleVariable = @{
+                  ExampleVariable2 = @{
                       isSecret = $false
                       value = "Example2"
                   }
